@@ -2,7 +2,8 @@
 const fs = require('fs');
 
 const template = function(elName, elSymb, elNum, elDesc){
-let path = `./public/${elName.toLowerCase()}.html`;
+  console.log(elDesc);
+let path = `/${elName.toLowerCase()}.html`;
 let htmlPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +20,7 @@ let htmlPage = `<!DOCTYPE html>
 </body>
 </html>`;
 console.log(htmlPage);
-fs.writeFile(path, htmlPage, (err) => {
+fs.writeFile(`./public${path}`, htmlPage, (err) => {
   if (err) {
     return false;
   }
@@ -27,4 +28,8 @@ fs.writeFile(path, htmlPage, (err) => {
 return path;
 }
 
-template('Boring', 'B', 53, 'Not a real Element.');
+module.exports = {
+  createHTML : template
+}
+
+// template('Boring', 'B', 53, 'Not a real Element.');

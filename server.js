@@ -4,6 +4,9 @@ const http = require('http');
 const fs = require('fs');
 const qs = require('querystring');
 
+const template = require('./elementTemplate.js');
+const catalog = require('./indexTemplate');
+
 const screen = process.stdout;
 const standardHead = { 'Content-Type': 'text/html', 'Date': `${new Date()}`, 'Server': 'NotAProxy' };
 
@@ -13,7 +16,7 @@ const httpServer = http.createServer((req, res) => {
 
   let method = req.method;
   let path = `${req.url === '/' ? `./public/index.html` : `./public${req.url}`}`;
-
+  console.log(method + " " +path);
   if (!contentDataHash[path]) {
     contentDataHash[path] = {};
   }
@@ -26,6 +29,16 @@ const httpServer = http.createServer((req, res) => {
       retrieveMethod(method, path, res);
       break;
     case 'POST':
+      if (path === './public/elements') {
+        let newPath = template.createHTML(req.headers.elementname,
+          req.headers.elementsymbol,
+          req.headers.elementatomicnumber,
+          req.headers.elementdescription);
+          catalog.createNewIndex(newPath);
+      } else {
+        error404(res);
+      }
+
       break;
     default:
       break;
@@ -35,16 +48,15 @@ const httpServer = http.createServer((req, res) => {
 
 
 function retrieveMethod(method, filePath, res) {
-  let fileExtension = filePath.split('.')[filePath.length - 1];
+  let fileExtension = filePath.split('.');
+  fileExtension = fileExtension[fileExtension.length - 1];
+  console.log(filePath);
+  console.log(fileExtension);
 
   fs.stat(filePath, function (err, stats) {
+
     if (err) {
-      res.writeHead(404, standardHead);
-      fs.readFile('./public/404.html', 'UTF8', function (err, data) {
-        res.write(data);
-        res.end();
-        console.log('Sent 404\n');
-      });
+      error404(res);
     } else {
       contentDataHash[filePath] = {
         'Content-Length': `${stats.size}`,
@@ -53,12 +65,27 @@ function retrieveMethod(method, filePath, res) {
           fileExtension === 'css' ? 'text/css' : 'text/plain'}`
       };
 
-      fs.readFile(filePath, 'UTF8', function (err, data) {
+      if (method === 'HEAD') {
         res.writeHead(200, Object.assign({}, standardHead, contentDataHash[filePath]));
-        res.write(data);
         res.end();
         console.log('Sent 200\n');
-      });
+      } else {
+        fs.readFile(filePath, 'UTF8', function (err, data) {
+          res.writeHead(200, Object.assign({}, standardHead, contentDataHash[filePath]));
+          res.write(data);
+          res.end();
+          console.log('Sent 200\n');
+        });
+      }
     }
+  });
+}
+
+function error404(res) {
+  res.writeHead(404, standardHead);
+  fs.readFile('./public/404.html', 'UTF8', function (err, data) {
+    res.write(data);
+    res.end();
+    console.log('Sent 404\n');
   });
 }
