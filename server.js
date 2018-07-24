@@ -16,7 +16,7 @@ const httpServer = http.createServer((req, res) => {
 
   let method = req.method;
   let path = `${req.url === '/' ? `./public/index.html` : `./public${req.url}`}`;
-  console.log(method + " " +path);
+  console.log(method + " " + path);
   if (!contentDataHash[path]) {
     contentDataHash[path] = {};
   }
@@ -29,29 +29,64 @@ const httpServer = http.createServer((req, res) => {
       retrieveMethod(method, path, res);
       break;
     case 'POST':
-      if (path === './public/elements') {
-        let newPath = template.createHTML(req.headers.elementname,
-          req.headers.elementsymbol,
-          req.headers.elementatomicnumber,
-          req.headers.elementdescription);
-          catalog.createNewIndex(newPath);
-      } else {
-        error404(res);
+      postMethod(path, req, res);
+      break;
+    case 'PUT':
+    let relativePath = path.slice(8);
+      if ((relativePath === '/') ||
+        (relativePath === '/index.html') ||
+        (relativePath === '/elements') ||
+        path.includes('css')) {
+        res.writeHead(400);
+        return res.end();
       }
-
+      putMethod(path, req, res);
       break;
     default:
+      res.writeHead(400);
+      res.end('Not a method recognized by this server');
       break;
   }
 
 }).listen(8080);
 
+function putMethod(path, req, res) {
+
+  template.createHTML(req.headers.elementname,
+    req.headers.elementsymbol,
+    req.headers.elementatomicnumber,
+    req.headers.elementdescription, (newPath) => {
+      newPath ? res.writeHead(200, `{"Content-Type" : "application/json"}`) :
+        res.writeHead(500, `{"Content-Type" : "application/json"}`);
+      newPath ? res.end(`"success" : ${newPath ? 'true' : 'false'}`) :
+        res.end(`"error" : ${path.slice(8)} does not exist`);
+      console.log(`Sent ${newPath ? `200` : `400`}\n`);
+    });
+
+}
+
+function postMethod(path, req, res) {
+  if (path === './public/elements') {
+    template.createHTML(req.headers.elementname,
+      req.headers.elementsymbol,
+      req.headers.elementatomicnumber,
+      req.headers.elementdescription, (newPath) => {
+        catalog.createNewIndex(newPath, (success) => {
+          success ? res.writeHead(200, `{"Content-Type" : "application/json"}`) :
+            res.writeHead(400, `{"Content-Type" : "application/json"}`);
+          res.end(`"success" : ${success}`);
+          console.log(`Sent ${success ? `200` : `400`}\n`);
+        });
+      });
+  } else {
+    error404(res);
+    console.log('Sent 404\n');
+  }
+}
 
 function retrieveMethod(method, filePath, res) {
   let fileExtension = filePath.split('.');
   fileExtension = fileExtension[fileExtension.length - 1];
-  console.log(filePath);
-  console.log(fileExtension);
 
   fs.stat(filePath, function (err, stats) {
 

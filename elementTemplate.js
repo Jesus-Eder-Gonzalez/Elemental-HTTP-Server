@@ -1,10 +1,16 @@
 'use strict';
 const fs = require('fs');
 
-const template = function(elName, elSymb, elNum, elDesc){
-  console.log(elDesc);
-let path = `/${elName.toLowerCase()}.html`;
-let htmlPage = `<!DOCTYPE html>
+const template = function (elName, elSymb, elNum, elDesc, cb) {
+
+  let success = false;
+
+  if (!elName || !elSymb || !elNum || !elDesc) {
+    return cb(success);
+  }
+
+  let path = `/${elName.toLowerCase()}.html`;
+  let htmlPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -19,17 +25,19 @@ let htmlPage = `<!DOCTYPE html>
   <p><a href="/">back</a></p>
 </body>
 </html>`;
-console.log(htmlPage);
-fs.writeFile(`./public${path}`, htmlPage, (err) => {
-  if (err) {
-    return false;
-  }
-});
-return path;
+
+  fs.writeFile(`./public${path}`, htmlPage, (err) => {
+    if (err) {
+      return cb(success);
+    } else {
+      return cb(path);
+    }
+  });
+
 }
 
 module.exports = {
-  createHTML : template
+  createHTML: template
 }
 
 // template('Boring', 'B', 53, 'Not a real Element.');
